@@ -13,6 +13,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 import matplotlib.pyplot as plt
 import csv
 from scipy.optimize import curve_fit
+import keras
 
 # constants
 IMG_HEIGHT, IMG_WIDTH = 75, 75
@@ -21,25 +22,36 @@ BATCH_SIZE = 32
 EPOCHS = 50
 MAX_EGGS = 42
 
-TESTING_SET = "/Users/shreyanakum/Downloads/5-4-cap-sliced-Angela"
-TESTINGSET2 = "/Users/shreyanakum/Downloads/5-4-cap-sliced-Julie"
+TESTING_SET = "/home/drosophila-lab/Documents/Fecundity/CNN-Classifier/TestingSets/5-4-cap-sliced-Angela"
+TESTINGSET2 = "/home/drosophila-lab/Documents/Fecundity/CNN-Classifier/TestingSets/5-4-cap-sliced-Julie"
 
 TOP_MODEL_NAMES_AND_PATHS = {
     # 'FecundityModelMoDataV3': ('/home/drosophila-lab/Documents/Fecundity/CNN-Classifier/fecundity_model_mo_data_v3.h5', None),
     # 'FecundityModelMoDataV4': ('/home/drosophila-lab/Documents/Fecundity/CNN-Classifier/fecundity_model_mo_data_v4.h5', None),
     # 'FecundityModelV1': ('/home/drosophila-lab/Documents/Fecundity/CNN-Classifier/fecundity_model_v1.h5', None),
-    'FecundityModelMoDataV1': ('/Users/shreyanakum/Downloads/CNN-Classifier/fecundity_model_mo_data_v1.h5', None),
+    #'FecundityModelMoDataV1': ('/Users/shreyanakum/Downloads/CNN-Classifier/fecundity_model_mo_data_v1.h5', None),
     # 'AugStrV1': ('/home/drosophila-lab/Documents/Fecundity/CNN-Classifier/fecundity_model_aug_str_v1.keras', None),
     # 'AugStrV3': ('/home/drosophila-lab/Documents/Fecundity/CNN-Classifier/fecundity_model_aug_str_v3.keras', None),
     # 'AugStrV4': ('/home/drosophila-lab/Documents/Fecundity/CNN-Classifier/fecundity_model_aug_str_v4.keras', None),
+    'AugStrV5': ('/home/drosophila-lab/Documents/Fecundity/CNN-Classifier/fecundity_model_aug_str_v5.keras', None),
     # 'Regression': ('/home/drosophila-lab/Documents/Fecundity/CNN-Classifier/best_regression_model.keras', None),
     # 'DualZONandAugStrV1': ("/home/drosophila-lab/Documents/Fecundity/CNN-Classifier/TestNoZeros/fecundity_model_zero_or_not.keras", '/home/drosophila-lab/Documents/Fecundity/CNN-Classifier/fecundity_model_aug_str_v1.keras'),
     # 'DualZONandAugStrV4': ("/home/drosophila-lab/Documents/Fecundity/CNN-Classifier/TestNoZeros/fecundity_model_zero_or_not.keras", '/home/drosophila-lab/Documents/Fecundity/CNN-Classifier/fecundity_model_aug_str_v4.keras') ,
     # 'DualZonAndNoZ': ("/home/drosophila-lab/Documents/Fecundity/CNN-Classifier/TestNoZeros/fecundity_model_zero_or_not.keras", "/home/drosophila-lab/Documents/Fecundity/CNN-Classifier/TestNoZeros/fecundity_model_no_zeros.keras")
 }
 
+@keras.saving.register_keras_serializable()
+def weighted_mse(class_weight_dict):
+    def weighted_mse(y_true, y_pred):
+        y_true = tf.cast(y_true, tf.float32)
+        bins = np.linspace(0, MAX_EGGS, N_BINS+1)[1:-1]
+        bin_indices = tf.cast(tf.histogram_fixed_width_bins(y_true, [0.0, float(MAX_EGGS)], N_BINS), tf.int32)
+        class_weights = tf.gather(tf.constant(list(class_weight_dict.values()), dtype=tf.float32), bin_indices)
+        return tf.reduce_mean(class_weights * tf.square(y_true - y_pred))
+    return weighted_mse
+
 def predict_egg_count_NoZ(image_path):
-    egg_count_model = tf.keras.models.load_model("/home/drosophila-lab/Documents/Fecundity/CNN-Classifier/TestNoZeros/fecundity_model_no_zeros.keras")
+    egg_count_model = tf.keras.models.load_model("/home/drosophila-lab/Documents/Fecundity/CNN-Classifier/TestNoZeros/fecundity_model_no_zeros.keras", custom_objecs={'weighted_mse':'weighted_mse'})
     img = tf.keras.preprocessing.image.load_img(image_path, target_size=(IMG_HEIGHT, IMG_WIDTH))
     img_array = tf.keras.preprocessing.image.img_to_array(img)
     img_array = np.expand_dims(img_array, axis=0)
@@ -153,6 +165,16 @@ def MSEs_get_class_counts(cap_csvs):
             counts[label]+=1
     
     return counts
+
+def create_weighted_mse(class_weight_dict):
+    def weighted_mse(y_true, y_pred):
+        y_true = tf.cast(y_true, tf.float32)
+        bins = np.linspace(0, MAX_EGGS, N_BINS+1)[1:-1]
+        bin_indices = tf.cast(tf.histogram_fixed_width_bins(y_true, [0.0, float(MAX_EGGS)], N_BINS), tf.int32)
+        class_weights = tf.gather(tf.constant(list(class_weight_dict.values()), dtype=tf.float32), bin_indices)
+        return tf.reduce_mean(class_weights * tf.square(y_true - y_pred))
+    return weighted_mse
+
 
 def MSEs_metrics_and_graph(caps_csvs, name):
     df = pd.read_csv(caps_csvs)

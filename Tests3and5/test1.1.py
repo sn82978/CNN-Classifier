@@ -1,51 +1,51 @@
 '''Testing between two different datasets Lithium Experiment vs CD Experiment'''
 
-# MODEL = "/home/drosophila-lab/Documents/Fecundity/CNN-Classifier/fecundity_model_aug_str_v1.keras"
+MODEL = "/home/drosophila-lab/Documents/Fecundity/CNN-Classifier/fecundity_model_aug_str_v5.keras"
 
-# ONE_DATASET_CD = "/home/drosophila-lab/Documents/Fecundity/CNN-Classifier/DATA/Winter 2017 2 21 C pops cap-sliced"
+ONE_DATASET_CD = "/home/drosophila-lab/Documents/Fecundity/CNN-Classifier/DATA/Winter 2017 2 21 C pops cap-sliced"
 
-# import os
-# import numpy as np
-# import tensorflow as tf
-# from tensorflow.keras import layers, models
-# from tensorflow.keras.preprocessing.image import ImageDataGenerator
-# from sklearn.model_selection import train_test_split
-# from PIL import Image
-# import time
-# import csv
+import os
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras import layers, models
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from sklearn.model_selection import train_test_split
+from PIL import Image
+import time
+import csv
 
-# # constants
-# IMG_HEIGHT, IMG_WIDTH = 75, 75
-# CHANNELS = 3  
-# BATCH_SIZE = 32
-# EPOCHS = 50
-# MAX_EGGS = 42
+# constants
+IMG_HEIGHT, IMG_WIDTH = 75, 75
+CHANNELS = 3  
+BATCH_SIZE = 32
+EPOCHS = 50
+MAX_EGGS = 42
 
-# # def model 
-# model = tf.keras.models.load_model(MODEL)
+# def model 
+model = tf.keras.models.load_model(MODEL)
 
-# # predict egg count in a new image
-# def predict_egg_count(image_path):
-#     img = tf.keras.preprocessing.image.load_img(image_path, target_size=(IMG_HEIGHT, IMG_WIDTH))
-#     img_array = tf.keras.preprocessing.image.img_to_array(img)
-#     img_array = np.expand_dims(img_array, axis=0)
-#     img_array = img_array.astype('float32') / 255.0
+# predict egg count in a new image
+def predict_egg_count(image_path):
+    img = tf.keras.preprocessing.image.load_img(image_path, target_size=(IMG_HEIGHT, IMG_WIDTH))
+    img_array = tf.keras.preprocessing.image.img_to_array(img)
+    img_array = np.expand_dims(img_array, axis=0)
+    img_array = img_array.astype('float32') / 255.0
    
-#     prediction = model.predict(img_array)
-#     egg_count = np.argmax(prediction[0])
+    prediction = model.predict(img_array)
+    egg_count = np.argmax(prediction[0])
    
-#     return egg_count
+    return egg_count
 
-# ROOT_DIR = ONE_DATASET_CD
-# with open("lithium_training_vs_CD_testing.csv", "w", newline='') as file:
-#     writer = csv.writer(file)
-#     writer.writerow(['ImagePath', 'Bot', 'Human'])
-#     for file in os.listdir(ROOT_DIR):
-#         if 'eggs' not in file or 'unsure' in file:
-#             continue
-#         label = file.split('eggs')[1].split('count')[0]
-#         predicted_eggs = predict_egg_count(f"{ROOT_DIR}/{file}")
-#         writer.writerow([file, predicted_eggs, label])
+ROOT_DIR = ONE_DATASET_CD
+with open("AUGSTRv5lithium_training_vs_CD_testing.csv", "w", newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(['ImagePath', 'Bot', 'Human'])
+    for file in os.listdir(ROOT_DIR):
+        if 'eggs' not in file or 'unsure' in file:
+            continue
+        label = file.split('eggs')[1].split('count')[0]
+        predicted_eggs = predict_egg_count(f"{ROOT_DIR}/{file}")
+        writer.writerow([file, predicted_eggs, label])
 
 import pandas as pd
 import numpy as np
